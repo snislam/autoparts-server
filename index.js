@@ -36,6 +36,7 @@ async function run() {
         await client.connect();
         const productsCollection = client.db("autoparts").collection("products");
         const usersCollection = client.db("autoparts").collection("users");
+        const reviewsCollection = client.db("autoparts").collection("reviews");
 
         const verifyAdmin = async (req, res, next) => {
             console.log(req.decoded)
@@ -86,6 +87,19 @@ async function run() {
             res.send({ result, token })
         })
 
+        // update profile
+        app.put('/user/update/:email', verifyJwt, async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
         app.delete('/user/:email', async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
@@ -105,6 +119,25 @@ async function run() {
             const user = await usersCollection.findOne({ email: email })
             const isAdmin = user.role === 'admin'
             res.send({ admin: isAdmin })
+        })
+
+        // add review
+        app.put('/review/:email', verifyJwt, async (req, res) => {
+            const email = req.params.email;
+            const body = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: body
+            }
+            const result = await reviewsCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
+        // get reviews
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewsCollection.find({}).toArray();
+            res.send(result)
         })
 
 
