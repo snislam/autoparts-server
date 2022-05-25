@@ -2,11 +2,29 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 app.use(cors())
 app.use(express.json())
+
+// verifyJwt function
+const verifyJwt = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'Unauthorized' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.DB_JWT_SECRET, (err, decoded) => {
+        if (err) {
+            res.status(403).send({ message: 'Forbidden' })
+        } else {
+            req.decoded = decoded;
+            next();
+        }
+    })
+}
 
 // mongodb section start
 
@@ -17,6 +35,17 @@ async function run() {
         await client.connect();
         const productsCollection = client.db("autoparts").collection("products");
         const usersCollection = client.db("autoparts").collection("users");
+
+        const verifyAdmin = async (req, res, next) => {
+            const requesterEmail = req.decoded.email;
+            const requester = await usersCollection.findOne({ email: requesterEmail })
+            if (requester.role === 'admin') {
+                next()
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden' })
+            }
+        }
 
         /**--------------------------------- */
         // products api calling center
@@ -49,7 +78,8 @@ async function run() {
                 $set: user
             }
             const result = await usersCollection.updateOne(filter, updateDoc, options)
-            res.send(result)
+            const token = jwt.sign({ email: email }, process.env.DB_JWT_SECRET, { expiresIn: '1d' })
+            res.send({ result, token })
         })
 
         app.delete('/user/:email', async (req, res) => {
@@ -60,7 +90,7 @@ async function run() {
         })
 
         // get all user
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJwt, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find({}).toArray();
             res.send(result);
         })
