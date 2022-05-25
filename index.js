@@ -37,6 +37,7 @@ async function run() {
         const productsCollection = client.db("autoparts").collection("products");
         const usersCollection = client.db("autoparts").collection("users");
         const reviewsCollection = client.db("autoparts").collection("reviews");
+        const ordersCollection = client.db("autoparts").collection("orders");
 
         const verifyAdmin = async (req, res, next) => {
             console.log(req.decoded)
@@ -137,6 +138,13 @@ async function run() {
         // get reviews
         app.get('/reviews', async (req, res) => {
             const result = await reviewsCollection.find({}).toArray();
+            res.send(result)
+        })
+
+        // place order
+        app.post('/orders', verifyJwt, async (req, res) => {
+            const order = req.body;
+            const result = await ordersCollection.insertOne(order)
             res.send(result)
         })
 
