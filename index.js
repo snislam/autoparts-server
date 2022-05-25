@@ -9,6 +9,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 app.use(cors())
 app.use(express.json())
 
+// mongodb section start
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.e2lck.mongodb.net/?retryWrites=true&w=majority`;
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
 // verifyJwt function
 const verifyJwt = async (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -26,10 +31,6 @@ const verifyJwt = async (req, res, next) => {
     })
 }
 
-// mongodb section start
-
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.e2lck.mongodb.net/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function run() {
     try {
         await client.connect();
@@ -37,8 +38,11 @@ async function run() {
         const usersCollection = client.db("autoparts").collection("users");
 
         const verifyAdmin = async (req, res, next) => {
+            console.log(req.decoded)
             const requesterEmail = req.decoded.email;
+            console.log(requesterEmail)
             const requester = await usersCollection.findOne({ email: requesterEmail })
+            console.log(requester)
             if (requester.role === 'admin') {
                 next()
             }
@@ -102,8 +106,6 @@ async function run() {
             const isAdmin = user.role === 'admin'
             res.send({ admin: isAdmin })
         })
-
-
 
 
     } finally {
