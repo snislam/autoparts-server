@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
+const stripe = require("stripe")(process.env.DB_STRIPE_SECRET);
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -38,6 +39,7 @@ async function run() {
         const usersCollection = client.db("autoparts").collection("users");
         const reviewsCollection = client.db("autoparts").collection("reviews");
         const ordersCollection = client.db("autoparts").collection("orders");
+        const paymentCollection = client.db("autoparts").collection("payment");
 
         const verifyAdmin = async (req, res, next) => {
             console.log(req.decoded)
@@ -145,6 +147,59 @@ async function run() {
         app.post('/orders', verifyJwt, async (req, res) => {
             const order = req.body;
             const result = await ordersCollection.insertOne(order)
+            res.send(result)
+        })
+
+        // my order api
+        app.get('/orders', verifyJwt, async (req, res) => {
+            const email = req.query.email;
+            const myOrders = await ordersCollection.find({ email: email }).toArray()
+            res.send(myOrders);
+        })
+
+        // individual orders
+        app.get('/order/:id', verifyJwt, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        // individual orders delete
+        app.delete('/order/:id', verifyJwt, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await ordersCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        // payment-intent
+        app.post('/payment-intent', verifyJwt, async (req, res) => {
+            const service = req.body;
+            const price = service.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            })
+            res.send({ clientSecret: paymentIntent.client_secret })
+        })
+
+        // update orders
+        app.patch('/bookings/:id', verifyJwt, async (req, res) => {
+            const id = req.params.id;
+            const body = req.body
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transectionId: body.transectionId,
+                    amount: body.amount
+                }
+            }
+            const result = await ordersCollection.updateOne(filter, updatedDoc)
+            const payments = await paymentCollection.insertOne(updatedDoc)
             res.send(result)
         })
 
