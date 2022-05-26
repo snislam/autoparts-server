@@ -249,6 +249,14 @@ async function run() {
             res.send(product)
         })
 
+        // delete product
+        app.delete('/products/:id', verifyJwt, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await productsCollection.deleteOne(query)
+            res.send(result)
+        })
+
 
     } finally {
         // empty for now
