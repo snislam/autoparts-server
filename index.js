@@ -242,6 +242,13 @@ async function run() {
             res.send(product)
         })
 
+        // add product 
+        app.post('/products', verifyJwt, verifyAdmin, async (req, res) => {
+            const body = req.body;
+            const product = await productsCollection.insertOne(body)
+            res.send(product)
+        })
+
 
     } finally {
         // empty for now
