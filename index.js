@@ -203,6 +203,45 @@ async function run() {
             res.send(result)
         })
 
+        // all orders
+        app.get('/allorders', verifyJwt, async (req, res) => {
+            const orders = await ordersCollection.find({}).toArray();
+            res.send(orders)
+        })
+
+        // deliver api for order
+        app.put('/orders/:id', verifyJwt, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const body = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: body
+            }
+            const result = await ordersCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
+        // deliver api for product
+        app.put('/products/:id', verifyJwt, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const body = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: body
+            }
+            const result = await productsCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
+        // get single product
+        app.get('/products/:id', verifyJwt, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const product = await productsCollection.findOne({ _id: ObjectId(id) })
+            res.send(product)
+        })
+
 
     } finally {
         // empty for now
