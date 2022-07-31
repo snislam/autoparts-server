@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const stripe = require("stripe")(process.env.DB_STRIPE_SECRET);
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { application } = require('express');
 
 app.use(cors())
 app.use(express.json())
@@ -36,6 +37,7 @@ async function run() {
     try {
         await client.connect();
         const productsCollection = client.db("autoparts").collection("products");
+        const blogsCollection = client.db("autoparts").collection("blogs");
         const usersCollection = client.db("autoparts").collection("users");
         const reviewsCollection = client.db("autoparts").collection("reviews");
         const ordersCollection = client.db("autoparts").collection("orders");
@@ -254,6 +256,27 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
             const result = await productsCollection.deleteOne(query)
+            res.send(result)
+        })
+
+
+        // get all blogs
+        app.get('/blogs', async (req, res) => {
+            const blogs = await blogsCollection.find({}).toArray()
+            res.send(blogs)
+        })
+
+        // get three blogs
+        app.get('/home-blog', async (req, res) => {
+            const blogs = await blogsCollection.find({}).limit(3).toArray()
+            res.send(blogs)
+        })
+
+        // get a single blog
+        app.get('/blog/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await blogsCollection.findOne(query)
             res.send(result)
         })
 
