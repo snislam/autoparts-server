@@ -74,6 +74,18 @@ async function run() {
             res.send(product)
         })
 
+        // get price asending order products list
+        app.get('/asending-products', async (req, res) => {
+            const products = await productsCollection.find({}).sort("price").toArray()
+            res.send(products)
+        })
+
+        // get price desending order products list
+        app.get('/desending-products', async (req, res) => {
+            const products = await productsCollection.find({}).sort({ price: -1 }).toArray()
+            res.send(products)
+        })
+
         /** ----------------------------- */
         // users api
         /** ----------------------------- */
