@@ -311,3 +311,5 @@ app.get('/', async (req, res) => {
 app.listen(port, () => {
     console.log('Port', port)
 })
+
+module.exports= app;
